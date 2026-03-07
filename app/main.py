@@ -4,6 +4,7 @@ from app.database import engine, Base, get_db
 from app import models
 
 Base.metadata.create_all(bind=engine)
+
 app = FastAPI(title="DB AI Automation API")
 
 @app.get("/users")
@@ -30,6 +31,17 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
 
 @app.post("/orders")
 def create_order(user_id: int, product_id: int, quantity: int, db: Session = Depends(get_db)):
+    if quantity <= 0:
+        raise HTTPException(status_code=400, detail="Quantity must be greater than zero")
+
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if not product:
+        raise HTTPException(status_code=404, detail="Product not found")
+
     order = models.Order(user_id=user_id, product_id=product_id, quantity=quantity)
     db.add(order)
     db.commit()
