@@ -1,6 +1,8 @@
 # DB AI Automation 🤖🗄️
 
-An AI-powered automated testing framework for a fake e-commerce API using FastAPI, MySQL, Playwright, and pytest — with AI-generated test data via the Anthropic API.
+An AI-powered automated testing framework for a fake e-commerce API using FastAPI, MySQL, Playwright, and pytest — with AI-generated test data via the Anthropic Claude API.
+
+![CI](https://github.com/ausrgonzale/db-ai-automation/actions/workflows/ci.yml/badge.svg)
 
 ---
 
@@ -76,36 +78,7 @@ You will know it worked when your terminal prompt shows `(venv)` at the start.
 > 💡 Every time you return to work on this project run:
 > `cd /Users/rongonzalez/Programming/Code/db-ai-automation && source venv/bin/activate`
 
-### 3. Create the requirements.txt file
-```bash
-cat > requirements.txt << 'REQS'
-# Web framework
-fastapi==0.111.0
-uvicorn==0.29.0
-
-# Database
-sqlalchemy==2.0.30
-pymysql==1.1.1
-cryptography==42.0.7
-
-# Data validation
-pydantic==2.7.1
-
-# AI data generation
-anthropic==0.25.8
-faker==25.0.1
-python-dotenv==1.0.1
-
-# Testing
-pytest==8.2.0
-pytest-asyncio==0.23.6
-pytest-html==4.1.1
-pytest-playwright==0.5.0
-httpx==0.27.0
-REQS
-```
-
-### 4. Install all packages
+### 3. Install all packages
 ```bash
 pip install -r requirements.txt
 playwright install
@@ -113,64 +86,38 @@ playwright install
 
 ---
 
-## 📂 Create Project Structure
-
-### Create folders
-```bash
-mkdir app
-mkdir data_gen
-mkdir tests
-mkdir tests/api
-mkdir tests/ui
-mkdir reports
-```
-
-### Create empty files
-```bash
-touch app/__init__.py
-touch app/database.py
-touch app/models.py
-touch app/main.py
-touch app/schemas.py
-touch data_gen/__init__.py
-touch data_gen/ai_generator.py
-touch tests/conftest.py
-touch tests/api/test_products.py
-touch tests/api/test_users.py
-touch tests/ui/test_storefront.py
-touch pytest.ini
-touch .env
-```
-
-### Verify structure
-```bash
-find . -not -path './venv/*' -type f
-```
-You should see 14 files listed.
-
----
-
 ## 📂 Project Structure
 ```
 db-ai-automation/
+├── .github/
+│   └── workflows/
+│       └── ci.yml            # GitHub Actions CI pipeline
 ├── app/
 │   ├── __init__.py
-│   ├── main.py           # FastAPI app and routes
-│   ├── models.py         # SQLAlchemy DB models
-│   ├── database.py       # MySQL connection setup
-│   └── schemas.py        # Pydantic request/response shapes
+│   ├── main.py               # FastAPI app and routes
+│   ├── models.py             # SQLAlchemy DB models
+│   ├── database.py           # MySQL connection setup
+│   └── schemas.py            # Pydantic request/response shapes
 ├── data_gen/
 │   ├── __init__.py
-│   └── ai_generator.py   # AI + Faker data generation
+│   └── ai_generator.py       # AI + Faker data generation
 ├── tests/
-│   ├── conftest.py       # Shared pytest fixtures (DB seed/teardown)
+│   ├── conftest.py           # Shared pytest fixtures (DB seed/teardown)
 │   ├── api/
 │   │   ├── test_users.py
 │   │   ├── test_products.py
-│   │   └── test_orders.py
+│   │   ├── test_orders.py
+│   │   ├── test_db_integrity.py
+│   │   ├── test_edge_cases.py
+│   │   └── test_e2e_shopping.py
 │   └── ui/
-│       └── test_storefront.py
-├── .env                  # API keys and DB credentials (never commit this)
+│       ├── conftest.py       # Playwright browser fixture
+│       ├── test_storefront.py
+│       └── test_e2e_shopping.py
+├── reports/                  # Auto-generated HTML test reports
+├── .env                      # API keys and DB credentials (never commit!)
+├── .env.example              # Example environment variables (safe to commit)
+├── .gitignore
 ├── requirements.txt
 ├── pytest.ini
 └── README.md
@@ -180,7 +127,12 @@ db-ai-automation/
 
 ## 🔑 Configure Environment Variables
 
-Edit `.env` and fill in your credentials:
+Copy the example file and fill in your credentials:
+```bash
+cp .env.example .env
+```
+
+Edit `.env`:
 ```
 # MySQL
 DB_HOST=localhost
@@ -194,21 +146,23 @@ ANTHROPIC_API_KEY=your_api_key_here
 ```
 Get your Anthropic API key at: https://console.anthropic.com under API Keys.
 
+> ⚠️ Never commit your `.env` file. It is listed in `.gitignore` and will never be tracked by Git.
+
 ---
 
 ## 🟢 Health Check
 
-| Tool       | Command               | Expected Output         |
-|------------|-----------------------|-------------------------|
-| Homebrew   | `brew --version`      | `Homebrew 4.x.x`        |
-| MySQL      | `mysql --version`     | `mysql  Ver 8.x.x`      |
-| Python     | `python3 --version`   | `Python 3.12.12`        |
-| Virtual env| check terminal prompt | starts with `(venv)`    |
-| pip        | `which pip`           | path contains `/venv/`  |
+| Tool        | Command               | Expected Output         |
+|-------------|-----------------------|-------------------------|
+| Homebrew    | `brew --version`      | `Homebrew 4.x.x`        |
+| MySQL       | `mysql --version`     | `mysql  Ver 8.x.x`      |
+| Python      | `python3 --version`   | `Python 3.12.12`        |
+| Virtual env | check terminal prompt | starts with `(venv)`    |
+| pip         | `which pip`           | path contains `/venv/`  |
 
 ---
 
-## ▶️ Running the Project
+## ▶️ Running the Project Locally
 
 ### Start the API server (Terminal window 1)
 ```bash
@@ -220,10 +174,48 @@ uvicorn app.main:app --reload
 pytest
 ```
 
+### Run only API tests
+```bash
+pytest tests/api/ -v
+```
+
+### Run only UI tests
+```bash
+pytest tests/ui/ -v
+```
+
 ### View the HTML test report
 ```bash
 open reports/test_report.html
 ```
+
+---
+
+## 🔄 CI/CD Pipeline (GitHub Actions)
+
+Every push to `main` automatically triggers the CI pipeline which:
+
+1. Spins up a MySQL 8.0 Docker service container
+2. Installs Python dependencies
+3. Installs Playwright Chromium browser
+4. Creates a `.env` file using GitHub Secrets
+5. Starts the FastAPI server
+6. Runs the full test suite
+7. Uploads the HTML test report as a downloadable artifact
+
+### Setting up GitHub Secrets
+
+Before the pipeline can run you need to add your Anthropic API key as a GitHub secret:
+
+1. Go to your repo → **Settings** → **Secrets and variables** → **Actions**
+2. Click **New repository secret**
+3. Name: `ANTHROPIC_API_KEY`
+4. Value: your Anthropic API key
+5. Click **Add secret**
+
+### Viewing pipeline results
+
+Go to your repo on GitHub and click the **Actions** tab to see all pipeline runs, logs, and downloadable test reports.
 
 ---
 
@@ -232,9 +224,9 @@ open reports/test_report.html
 - [x] Project scaffolding
 - [x] MySQL + SQLAlchemy setup
 - [x] AI data generation with Anthropic API
-- [ ] API tests with pytest + httpx
-- [ ] UI tests with Playwright
-- [ ] Order tests with direct DB verification
-- [ ] Edge case generation with Claude
-- [ ] GitHub Actions CI pipeline
+- [x] API tests with pytest + httpx
+- [x] UI tests with Playwright
+- [x] Order tests with direct DB verification
+- [x] Edge case generation with Claude
+- [x] GitHub Actions CI pipeline
 - [ ] Allure Reports integration
