@@ -6,3 +6,6 @@ __pycache__/
 .pytest_cache/
 reports/
 .DS_Store
+
+# Local Documentation
+docs/
