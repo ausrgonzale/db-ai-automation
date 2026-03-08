@@ -7,6 +7,11 @@ load_dotenv()
 fake = Faker()
 client = anthropic.Anthropic()
 
+def _parse_json_response(text: str):
+    """Strip markdown code fences if present, then parse JSON."""
+    text = text.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    return json.loads(text)
+
 def generate_ai_products(count: int = 5) -> list[dict]:
     """Ask Claude to generate realistic product data as JSON."""
     prompt = f"""Generate {count} fake e-commerce products as a JSON array.
@@ -17,7 +22,7 @@ def generate_ai_products(count: int = 5) -> list[dict]:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     )
-    return json.loads(message.content[0].text)
+    return _parse_json_response(message.content[0].text)
 
 def generate_fake_users(count: int = 5) -> list[dict]:
     """Use Faker to generate user data."""
@@ -37,7 +42,7 @@ def generate_edge_case_products() -> list[dict]:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     )
-    return json.loads(message.content[0].text)
+    return _parse_json_response(message.content[0].text)
 
 def generate_edge_case_users() -> list[dict]:
     """Ask Claude to generate invalid user data for negative testing."""
@@ -50,4 +55,4 @@ def generate_edge_case_users() -> list[dict]:
         max_tokens=1024,
         messages=[{"role": "user", "content": prompt}]
     )
-    return json.loads(message.content[0].text)
+    return _parse_json_response(message.content[0].text)
